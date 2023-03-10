@@ -1,0 +1,28 @@
+#This script creates several buffers around sampling locations and calculates percentages for each of 4 main land use types.
+
+#Merge of all layers that make up the different land use types
+
+Input parameters merge vector layers:
+processing.run("native:mergevectorlayers", {'LAYERS':['C:/temp/ProjectSpeps/akermarkutantatort.gpkg','C:/temp/ProjectSpeps/annatmarkslag.shp','C:/temp/ProjectSpeps/skogsmark.shp','C:/Users/gusspetpa/Downloads/_versiktskartan_latest_shp_br_General_map_ba3ecde1-2dbf-40b8-8ee2-47b7d2a5dbba_/mb_riks.shp'],'CRS':None,'OUTPUT':'C:/temp/ProjectSpeps/Buffers/MERGE.gpkg'})
+#OUTPUT:
+{'OUTPUT': 'C:/temp/ProjectSpeps/Buffers/MERGE.gpkg'}
+
+#Buffer is created based on the file with sample locations
+#Buffer input parameters:
+processing.run("native:buffer", {'INPUT':'C:/temp/ProjectSpeps/Buffers/Buffer10m.gpkg','DISTANCE':200,'SEGMENTS':5,'END_CAP_STYLE':0,'JOIN_STYLE':0,'MITER_LIMIT':2,'DISSOLVE':True,'OUTPUT':'C:/temp/ProjectSpeps/Buffers/Buffer200m.gpkg'})
+
+#The buffer is intersected with the landusemerger-file.
+# Intersect input parameters:
+processing.run("native:intersection", {'INPUT':'C:/temp/ProjectSpeps/Buffers/Buffer200m.gpkg','OVERLAY':'C:/temp/ProjectSpeps/Buffers/MERGE.gpkg','INPUT_FIELDS':[],'OVERLAY_FIELDS':[],'OVERLAY_FIELDS_PREFIX':'','OUTPUT':'C:/temp/ProjectSpeps/Buffers/buffer200mbylanduse.gpkg'})
+
+# Statistics are created so that the area-size for each polygon per land type is shown
+# statistics för buffert:
+processing.run("qgis:exportaddgeometrycolumns", {'INPUT':'C:/temp/ProjectSpeps/Buffers/buffer200mbylanduse.gpkg','CALC_METHOD':0,'OUTPUT':'C:/temp/ProjectSpeps/Buffers/addgeometrybuffer200m.gpkg'})
+
+#A txt-file is created to output statistics per land type.
+# Input parameters statistics by categories:
+processing.run("qgis:statisticsbycategories", {'INPUT':'C:/temp/ProjectSpeps/Buffers/addgeometrybuffer200m.gpkg','VALUES_FIELD_NAME':'area_3','CATEGORIES_FIELD_NAME':['layer'],'OUTPUT':'C:/temp/ProjectSpeps/Buffers/Sumbylanduse200m.gpkg'})
+
+#The percentage for each land use type is calculated and a txt-file is generated:
+processing.run("native:fieldcalculator", {'INPUT':'C:/temp/ProjectSpeps/Buffers/Sumbylanduse200m.gpkg','FIELD_NAME':'Percentages','FIELD_TYPE':0,'FIELD_LENGTH':0,'FIELD_PRECISION':0,'FORMULA':'sum / (sum( "sum" )','OUTPUT':'C:/temp/ProjectSpeps/Buffers/Sumbylandusepercentages200m.gpkg'})
+
