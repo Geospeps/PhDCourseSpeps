@@ -1,11 +1,65 @@
 #This script creates several buffers around sampling locations and calculates percentages for each of 4 main land use types.
+#Ta information från UMEP-Tutorial online!!
+
+from qgis.core import QgsApplication, QgsVectorLayer
+#Starting a QGIS application
+qgishome = 'C:/OSGeo4W/apps/qgis/'
+QgsApplication.setPrefixPath(qgishome, True)
+app = QgsApplication([], False)
+app.initQgis()
+fileName = 'C:/temp/dronephotos.shp'
+vlayer = QgsVectorLayer(fileName, 'point', 'ogr')
+print(vlayer.isValid())
+
+# Prepare processing framework
+from qgis.core import QgsApplication, QgsVectorLayer
+from osgeo import gdal
+import numpy as np
+import sys
+sys.path.append('C:/OSGeo4W/apps/qgis/python/plugins')
+from processing.core.Processing import Processing
+Processing.initialize()
+
+qgishome = 'C:/OSGeo4W/apps/qgis/'
+QgsApplication.setPrefixPath(qgishome, True)
+app = QgsApplication([], False)
+app.initQgis()
+
+sys.path.append(r'C:\OSGeo4W\apps\qgis\python\plugins')
+sys.path.append(r'C:\Users\__yourusername__\AppData\Roaming\QGIS\QGIS3\profiles\default\python\plugins')
+
+import processing
+from processing_umep.processing_umep_provider import ProcessingUMEPProvider
+umep_provider = ProcessingUMEPProvider()
+QgsApplication.processingRegistry().addProvider(umep_provider)
+
+from processing.core.Processing import Processing
+Processing.initialize()
+
+import warnings
+warnings.filterwarnings("ignore")
+
+for alg in QgsApplication.processingRegistry().algorithms():
+    print(alg.id(), "->", alg.displayName())
+
+processing.algorithmHelp("native:buffer")
+
+algparams = {
+    'INPUT': 'c:/temp/dronephotos.shp',
+    'DISSOLVE' : False, 
+    'DISTANCE' : 50, 
+    'END_CAP_STYLE' : 0,
+    'JOIN_STYLE' : 0, 
+    'MITER_LIMIT' : 2, 
+    'OUTPUT' : 'C:/Users/gusspetpa/PyfGIS/buffer.gpkg', 
+    'SEGMENTS' : 5 } )
+
+processing.run("native:buffer", algparams)
+
 
 #Merge of all layers that make up the different land use types
-
-Input parameters merge vector layers:
+#Input parameters merge vector layers:
 processing.run("native:mergevectorlayers", {'LAYERS':['C:/temp/ProjectSpeps/akermarkutantatort.gpkg','C:/temp/ProjectSpeps/annatmarkslag.shp','C:/temp/ProjectSpeps/skogsmark.shp','C:/Users/gusspetpa/Downloads/_versiktskartan_latest_shp_br_General_map_ba3ecde1-2dbf-40b8-8ee2-47b7d2a5dbba_/mb_riks.shp'],'CRS':None,'OUTPUT':'C:/temp/ProjectSpeps/Buffers/MERGE.gpkg'})
-#OUTPUT:
-{'OUTPUT': 'C:/temp/ProjectSpeps/Buffers/MERGE.gpkg'}
 
 #Buffer is created based on the file with sample locations
 #Buffer input parameters:
@@ -25,4 +79,3 @@ processing.run("qgis:statisticsbycategories", {'INPUT':'C:/temp/ProjectSpeps/Buf
 
 #The percentage for each land use type is calculated and a txt-file is generated:
 processing.run("native:fieldcalculator", {'INPUT':'C:/temp/ProjectSpeps/Buffers/Sumbylanduse200m.gpkg','FIELD_NAME':'Percentages','FIELD_TYPE':0,'FIELD_LENGTH':0,'FIELD_PRECISION':0,'FORMULA':'sum / (sum( "sum" )','OUTPUT':'C:/temp/ProjectSpeps/Buffers/Sumbylandusepercentages200m.gpkg'})
-
