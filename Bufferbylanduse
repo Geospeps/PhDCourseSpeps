@@ -1,10 +1,9 @@
 import sys
-from qgis import processing
-from qgis.PyQt import QtCore
 from qgis.core import QgsApplication, QgsVectorLayer,QgsProcessingAlgorithm, QgsProcessingParameterNumber, QgsProcessingParameterFeatureSource, QgsProcessingParameterFeatureSink
+from qgis.PyQt import QtCore
 sys.path.append('C:/OSGeo4W/apps/qgis/python/plugins')
-from processing.core.Processing import processing
 import processing
+from processing.core.Processing import Processing
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 #bufferloop. skapar buffert i 10m-steg från 10m - 200m
