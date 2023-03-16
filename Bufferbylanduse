@@ -1,81 +1,148 @@
-#This script creates several buffers around sampling locations and calculates percentages for each of 4 main land use types.
-#Ta information från UMEP-Tutorial online!!
-
-from qgis.core import QgsApplication, QgsVectorLayer
-#Starting a QGIS application
-qgishome = 'C:/OSGeo4W/apps/qgis/'
-QgsApplication.setPrefixPath(qgishome, True)
-app = QgsApplication([], False)
-app.initQgis()
-fileName = 'C:/temp/dronephotos.shp'
-vlayer = QgsVectorLayer(fileName, 'point', 'ogr')
-print(vlayer.isValid())
-
-# Prepare processing framework
-from qgis.core import QgsApplication, QgsVectorLayer
-from osgeo import gdal
-import numpy as np
 import sys
+from qgis.core import QgsApplication, QgsVectorLayer
 sys.path.append('C:/OSGeo4W/apps/qgis/python/plugins')
 from processing.core.Processing import Processing
 Processing.initialize()
 
-qgishome = 'C:/OSGeo4W/apps/qgis/'
-QgsApplication.setPrefixPath(qgishome, True)
-app = QgsApplication([], False)
-app.initQgis()
+#bufferloop. skapar buffert i 10m-steg från 10m - 200m
 
-sys.path.append(r'C:\OSGeo4W\apps\qgis\python\plugins')
-sys.path.append(r'C:\Users\__yourusername__\AppData\Roaming\QGIS\QGIS3\profiles\default\python\plugins')
-
-import processing
-from processing_umep.processing_umep_provider import ProcessingUMEPProvider
-umep_provider = ProcessingUMEPProvider()
-QgsApplication.processingRegistry().addProvider(umep_provider)
-
-from processing.core.Processing import Processing
-Processing.initialize()
-
-import warnings
-warnings.filterwarnings("ignore")
-
-for alg in QgsApplication.processingRegistry().algorithms():
-    print(alg.id(), "->", alg.displayName())
-
-processing.algorithmHelp("native:buffer")
-
-algparams = {
-    'INPUT': 'c:/temp/dronephotos.shp',
-    'DISSOLVE' : False, 
-    'DISTANCE' : 50, 
-    'END_CAP_STYLE' : 0,
-    'JOIN_STYLE' : 0, 
-    'MITER_LIMIT' : 2, 
-    'OUTPUT' : 'C:/Users/gusspetpa/PyfGIS/buffer.gpkg', 
-    'SEGMENTS' : 5 } )
-
-processing.run("native:buffer", algparams)
+x = 10
 
 
-#Merge of all layers that make up the different land use types
-#Input parameters merge vector layers:
-processing.run("native:mergevectorlayers", {'LAYERS':['C:/temp/ProjectSpeps/akermarkutantatort.gpkg','C:/temp/ProjectSpeps/annatmarkslag.shp','C:/temp/ProjectSpeps/skogsmark.shp','C:/Users/gusspetpa/Downloads/_versiktskartan_latest_shp_br_General_map_ba3ecde1-2dbf-40b8-8ee2-47b7d2a5dbba_/mb_riks.shp'],'CRS':None,'OUTPUT':'C:/temp/ProjectSpeps/Buffers/MERGE.gpkg'})
+while x:
 
-#Buffer is created based on the file with sample locations
-#Buffer input parameters:
-processing.run("native:buffer", {'INPUT':'C:/temp/ProjectSpeps/Buffers/Buffer10m.gpkg','DISTANCE':200,'SEGMENTS':5,'END_CAP_STYLE':0,'JOIN_STYLE':0,'MITER_LIMIT':2,'DISSOLVE':True,'OUTPUT':'C:/temp/ProjectSpeps/Buffers/Buffer200m.gpkg'})
+    buffer = 'C:/temp/ProjectSpeps/Buffers/Bufferloop/Buffer' + str(x) + 'm.gpkg'
 
-#The buffer is intersected with the landusemerger-file.
-# Intersect input parameters:
-processing.run("native:intersection", {'INPUT':'C:/temp/ProjectSpeps/Buffers/Buffer200m.gpkg','OVERLAY':'C:/temp/ProjectSpeps/Buffers/MERGE.gpkg','INPUT_FIELDS':[],'OVERLAY_FIELDS':[],'OVERLAY_FIELDS_PREFIX':'','OUTPUT':'C:/temp/ProjectSpeps/Buffers/buffer200mbylanduse.gpkg'})
+    processing.run("native:buffer", 
 
-# Statistics are created so that the area-size for each polygon per land type is shown
-# statistics för buffert:
-processing.run("qgis:exportaddgeometrycolumns", {'INPUT':'C:/temp/ProjectSpeps/Buffers/buffer200mbylanduse.gpkg','CALC_METHOD':0,'OUTPUT':'C:/temp/ProjectSpeps/Buffers/addgeometrybuffer200m.gpkg'})
+    {'INPUT':'C:/temp/ProjectSpeps/Buffers/Buffer10m.gpkg',
 
-#A txt-file is created to output statistics per land type.
-# Input parameters statistics by categories:
-processing.run("qgis:statisticsbycategories", {'INPUT':'C:/temp/ProjectSpeps/Buffers/addgeometrybuffer200m.gpkg','VALUES_FIELD_NAME':'area_3','CATEGORIES_FIELD_NAME':['layer'],'OUTPUT':'C:/temp/ProjectSpeps/Buffers/Sumbylanduse200m.gpkg'})
+    'DISTANCE':x,
 
-#The percentage for each land use type is calculated and a txt-file is generated:
-processing.run("native:fieldcalculator", {'INPUT':'C:/temp/ProjectSpeps/Buffers/Sumbylanduse200m.gpkg','FIELD_NAME':'Percentages','FIELD_TYPE':0,'FIELD_LENGTH':0,'FIELD_PRECISION':0,'FORMULA':'sum / (sum( "sum" )','OUTPUT':'C:/temp/ProjectSpeps/Buffers/Sumbylandusepercentages200m.gpkg'})
+    'SEGMENTS':5,
+
+    'END_CAP_STYLE':0,
+
+    'JOIN_STYLE':0,
+
+    'MITER_LIMIT':2,
+
+    'DISSOLVE':True,
+
+    'OUTPUT':buffer})
+
+    x += 10
+
+    if x > 201:
+
+        break
+
+
+
+#Intersect av ovanstående buffertlager med ett lager där alla markarter finns
+
+x = 10
+
+
+
+while x:
+
+    bufferfile = 'C:/temp/ProjectSpeps/Buffers/Bufferloop/Buffer' + str(x) + 'm.gpkg'
+
+    intersect = 'C:/temp/ProjectSpeps/Buffers/Intersects/Intersect' + str(x) + 'm.gpkg'
+
+    processing.run("native:intersection", 
+
+    {'INPUT':bufferfile,
+
+    'OVERLAY':'C:/temp/ProjectSpeps/Buffers/MERGE.gpkg',
+
+    'INPUT_FIELDS':[],
+
+    'OVERLAY_FIELDS':[],
+
+    'OVERLAY_FIELDS_PREFIX':
+
+    '',
+
+    'OUTPUT':intersect})
+
+    x += 10
+
+    if x > 201:
+
+        break
+
+x = 10
+
+
+
+while x:
+
+    intersect = 'C:/temp/ProjectSpeps/Buffers/Intersects/Intersect' + str(x) + 'm.gpkg'
+
+    geometry = 'C:/temp/ProjectSpeps/Buffers/Addgeometry/Addgeometry' + str(x) + 'm.gpkg'
+
+    processing.run("qgis:exportaddgeometrycolumns", 
+
+    {'INPUT':
+
+    intersect,
+
+    'CALC_METHOD':0,
+
+    'OUTPUT':
+
+    geometry})
+
+    x += 10
+
+    if x > 201:
+
+        break
+
+x = 10
+
+
+
+while x:
+
+    geometry = 'C:/temp/ProjectSpeps/Buffers/Addgeometry/Addgeometry' + str(x) + 'm.gpkg'
+
+    sumbylanduse = 'C:/temp/ProjectSpeps/Buffers/Sums/Sumbylanduse' + str(x) + 'm.gpkg'
+
+    processing.run("qgis:statisticsbycategories", 
+
+    {'INPUT':geometry,
+
+    'VALUES_FIELD_NAME':
+
+    'area_2',
+
+    'CATEGORIES_FIELD_NAME':['layer'],
+
+    'OUTPUT':sumbylanduse})
+
+    x += 10
+
+    if x > 201:
+
+        break
+
+x = 10
+
+while x:
+    sumbylanduse = 'C:/temp/ProjectSpeps/Buffers/Sums/Sumbylanduse' + str(x) + 'm.gpkg'
+    suminpercentage = 'C:/temp/ProjectSpeps/Buffers/Sumpercentage/Suminpercentage' + str(x) + 'm.gpkg'
+    processing.run("native:fieldcalculator", 
+    {'INPUT':sumbylanduse,
+    'FIELD_NAME':'percentages',
+    'FIELD_TYPE':0,
+    'FIELD_LENGTH':0,
+    'FIELD_PRECISION':0,
+    'FORMULA':'  "sum" /sum( "sum" )',
+    'OUTPUT':suminpercentage})
+    x += 10
+
+    if x > 201:
+        break
