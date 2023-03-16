@@ -1,0 +1,163 @@
+from PyQt5 import *
+from qgis.core import *
+from qgis.gui import *
+from qgis.PyQt.QtWidgets import *
+from osgeo import gdal
+import numpy as np
+import sys
+from qgis.PyQt import QtCore
+sys.path.append('C:/OSGeo4W/apps/qgis/python/plugins')
+import processing
+from processing.core.Processing import Processing
+
+qgishome = 'C:/OSGeo4W/apps/qgis/'
+QgsApplication.setPrefixPath(qgishome, True)
+app = QgsApplication([], False)
+app.initQgis()
+
+for alg in QgsApplication.processingRegistry().algorithms():
+    print(alg.id(), "->", alg.displayName())
+processing.algorithmHelp("native:buffer")
+
+#bufferloop. skapar buffert i 10m-steg från 10m - 200m
+x = 10
+
+while x:
+
+    buffer = 'C:/temp/ProjectSpeps/Buffers/Bufferloop/Buffer' + str(x) + 'm.gpkg'
+
+    processing.run("native:buffer", 
+
+    {'INPUT':'C:/temp/ProjectSpeps/Buffers/Buffer10m.gpkg',
+
+    'DISTANCE':x,
+
+    'SEGMENTS':5,
+
+    'END_CAP_STYLE':0,
+
+    'JOIN_STYLE':0,
+
+    'MITER_LIMIT':2,
+
+    'DISSOLVE':True,
+
+    'OUTPUT':buffer})
+
+    x += 10
+
+    if x > 201:
+
+        break
+
+
+
+#Intersect av ovanstående buffertlager med ett lager där alla markarter finns
+
+x = 10
+
+
+
+while x:
+
+    bufferfile = 'C:/temp/ProjectSpeps/Buffers/Bufferloop/Buffer' + str(x) + 'm.gpkg'
+
+    intersect = 'C:/temp/ProjectSpeps/Buffers/Intersects/Intersect' + str(x) + 'm.gpkg'
+
+    processing.run("native:intersection", 
+
+    {'INPUT':bufferfile,
+
+    'OVERLAY':'C:/temp/ProjectSpeps/Buffers/MERGE.gpkg',
+
+    'INPUT_FIELDS':[],
+
+    'OVERLAY_FIELDS':[],
+
+    'OVERLAY_FIELDS_PREFIX':
+
+    '',
+
+    'OUTPUT':intersect})
+
+    x += 10
+
+    if x > 201:
+
+        break
+
+x = 10
+
+
+
+while x:
+
+    intersect = 'C:/temp/ProjectSpeps/Buffers/Intersects/Intersect' + str(x) + 'm.gpkg'
+
+    geometry = 'C:/temp/ProjectSpeps/Buffers/Addgeometry/Addgeometry' + str(x) + 'm.gpkg'
+
+    processing.run("qgis:exportaddgeometrycolumns", 
+
+    {'INPUT':
+
+    intersect,
+
+    'CALC_METHOD':0,
+
+    'OUTPUT':
+
+    geometry})
+
+    x += 10
+
+    if x > 201:
+
+        break
+
+x = 10
+
+
+
+while x:
+
+    geometry = 'C:/temp/ProjectSpeps/Buffers/Addgeometry/Addgeometry' + str(x) + 'm.gpkg'
+
+    sumbylanduse = 'C:/temp/ProjectSpeps/Buffers/Sums/Sumbylanduse' + str(x) + 'm.gpkg'
+
+    processing.run("qgis:statisticsbycategories", 
+
+    {'INPUT':geometry,
+
+    'VALUES_FIELD_NAME':
+
+    'area_2',
+
+    'CATEGORIES_FIELD_NAME':['layer'],
+
+    'OUTPUT':sumbylanduse})
+
+    x += 10
+
+    if x > 201:
+
+        break
+
+x = 10
+
+while x:
+    sumbylanduse = 'C:/temp/ProjectSpeps/Buffers/Sums/Sumbylanduse' + str(x) + 'm.gpkg'
+    suminpercentage = 'C:/temp/ProjectSpeps/Buffers/Sumpercentage/Suminpercentage' + str(x) + 'm.gpkg'
+    processing.run("native:fieldcalculator", 
+    {'INPUT':sumbylanduse,
+    'FIELD_NAME':'percentages',
+    'FIELD_TYPE':0,
+    'FIELD_LENGTH':0,
+    'FIELD_PRECISION':0,
+    'FORMULA':'  "sum" /sum( "sum" )',
+    'OUTPUT':suminpercentage})
+    x += 10
+
+    if x > 201:
+        break
+
+app.exitQgis()
